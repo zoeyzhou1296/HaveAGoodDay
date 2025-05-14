@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Tracker Demo</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .app-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background-color: rgba(75, 192, 192, 0.3);
+            border-color: rgba(75, 192, 192, 1);
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .mood-value {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .save-button {
+            padding: 10px 20px;
+            background-color: rgba(75, 192, 192, 1);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+        }
+        .save-button:hover {
+            background-color: rgba(75, 192, 192, 0.8);
+        }
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+        .entry-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .entry-item {
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .entry-time {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .entry-notes {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        .mood-insights {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .insight-card {
+            flex: 1;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+        .mood-label {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            margin-top: 5px;
+        }
+        .wakeup-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .log-methods {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .log-method-button {
+            padding: 8px 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .log-method-button.active {
+            background-color: rgba(75, 192, 192, 0.3);
+            border-color: rgba(75, 192, 192, 1);
+        }
+        .log-method {
+            display: none;
+        }
+        .log-method.active {
+            display: block;
+        }
+        .number-input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .notification {
+            padding: 10px 15px;
+            background-color: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <h1>Mood Tracker</h1>
+        
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="log">Log Mood</button>
+            <button class="tab-button" data-tab="history">History</button>
+            <button class="tab-button" data-tab="insights">Insights</button>
+        </div>
+        
+        <div id="log-tab" class="tab-content active">
+            <div class="wakeup-section">
+                <h3>Daily Schedule</h3>
+                <div class="form-group">
+                    <label for="wake-up-time">What time did you wake up today?</label>
+                    <input type="time" id="wake-up-time" value="07:00">
+                </div>
+                <div class="form-group">
+                    <label for="bed-time">What time do you plan to go to bed?</label>
+                    <input type="time" id="bed-time" value="23:00">
+                </div>
+                <button id="save-schedule" class="save-button">Save Schedule</button>
+                <div id="schedule-notification" class="notification">Schedule saved!</div>
+            </div>
+            
+            <div class="log-methods">
+                <button class="log-method-button active" data-method="current">Current Mood</button>
+                <button class="log-method-button" data-method="specific">Specific Time</button>
+            </div>
+            
+            <div id="current-method" class="log-method active">
+                <h2>How are you feeling right now?</h2>
+                
+                <div class="form-group">
+                    <label for="mood-slider">Mood (-5 to +5):</label>
+                    <input type="range" id="mood-slider" min="-5" max="5" step="0.5" value="0">
+                    <div class="range-labels">
+                        <span>-5</span>
+                        <span>-4</span>
+                        <span>-3</span>
+                        <span>-2</span>
+                        <span>-1</span>
+                        <span>0</span>
+                        <span>+1</span>
+                        <span>+2</span>
+                        <span>+3</span>
+                        <span>+4</span>
+                        <span>+5</span>
+                    </div>
+                    <div class="mood-value" id="mood-value-display">0</div>
+                    <div class="mood-label" id="mood-label-display">Neutral</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mood-notes">What's happening?</label>
+                    <textarea id="mood-notes" rows="4" placeholder="Describe what's affecting your mood right now..."></textarea>
+                </div>
+                
+                <button class="save-button" id="save-current-mood">Save Current Mood</button>
+                <div id="current-notification" class="notification">Mood saved!</div>
+            </div>
+            
+            <div id="specific-method" class="log-method">
+                <h2>Log Mood for a Specific Time</h2>
+                
+                <div class="form-group">
+                    <label for="specific-time">Time:</label>
+                    <input type="time" id="specific-time" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label for="specific-mood">Mood Value (-5 to +5):</label>
+                    <input type="number" id="specific-mood" class="number-input" min="-5" max="5" step="0.5" value="0">
+                    <div class="mood-label" id="specific-mood-label">Neutral</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="specific-notes">What was happening?</label>
+                    <textarea id="specific-notes" rows="4" placeholder="Describe what affected your mood at this time..."></textarea>
+                </div>
+                
+                <button class="save-button" id="save-specific-mood">Save This Mood Entry</button>
+                <div id="specific-notification" class="notification">Mood saved!</div>
+            </div>
+        </div>
+        
+        <div id="history-tab" class="tab-content">
+            <h2>Mood History</h2>
+            
+            <div class="form-group">
+                <label for="history-date">Select Date:</label>
+                <input type="date" id="history-date" value="">
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="history-chart"></canvas>
+            </div>
+            
+            <h3>Mood Log Entries</h3>
+            <ul class="entry-list" id="entry-list">
+                <!-- Entries will be populated by JavaScript -->
+            </ul>
+        </div>
+        
+        <div id="insights-tab" class="tab-content">
+            <h2>Mood Insights</h2>
+            
+            <div class="chart-container">
+                <canvas id="insights-chart"></canvas>
+            </div>
+            
+            <div class="mood-insights">
+                <div class="insight-card">
+                    <h3>What Makes You Happy</h3>
+                    <ul id="happiness-factors">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+                <div class="insight-card">
+                    <h3>What May Cause Lower Moods</h3>
+                    <ul id="sadness-factors">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const logMethodButtons = document.querySelectorAll('.log-method-button');
+        const logMethods = document.querySelectorAll('.log-method');
+        
+        // Schedule inputs
+        const wakeUpTimeInput = document.getElementById('wake-up-time');
+        const bedTimeInput = document.getElementById('bed-time');
+        const saveScheduleBtn = document.getElementById('save-schedule');
+        const scheduleNotification = document.getElementById('schedule-notification');
+        
+        // Current mood logging
+        const moodSlider = document.getElementById('mood-slider');
+        const moodValueDisplay = document.getElementById('mood-value-display');
+        const moodLabelDisplay = document.getElementById('mood-label-display');
+        const moodNotesInput = document.getElementById('mood-notes');
+        const saveCurrentMoodBtn = document.getElementById('save-current-mood');
+        const currentNotification = document.getElementById('current-notification');
+        
+        // Specific time mood logging
+        const specificTimeInput = document.getElementById('specific-time');
+        const specificMoodInput = document.getElementById('specific-mood');
+        const specificMoodLabel = document.getElementById('specific-mood-label');
+        const specificNotesInput = document.getElementById('specific-notes');
+        const saveSpecificMoodBtn = document.getElementById('save-specific-mood');
+        const specificNotification = document.getElementById('specific-notification');
+        
+        // History view
+        const historyDateInput = document.getElementById('history-date');
+        const entryListContainer = document.getElementById('entry-list');
+        
+        // Tab switching
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Show selected tab content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+                
+                // Load data for the selected tab
+                if (tabId === 'history') {
+                    loadHistoryData();
+                } else if (tabId === 'insights') {
+                    loadInsightsData();
+                }
+            });
+        });
+        
+        // Logging method switching
+        logMethodButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const methodId = button.getAttribute('data-method');
+                
+                // Update active method button
+                logMethodButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Show selected method content
+                logMethods.forEach(method => method.classList.remove('active'));
+                document.getElementById(`${methodId}-method`).classList.add('active');
+            });
+        });
+        
+        // Save schedule
+        saveScheduleBtn.addEventListener('click', () => {
+            const schedule = {
+                wakeUpTime: wakeUpTimeInput.value,
+                bedTime: bedTimeInput.value
+            };
+            
+            localStorage.setItem('moodSchedule', JSON.stringify(schedule));
+            
+            // Show notification
+            scheduleNotification.style.display = 'block';
+            setTimeout(() => {
+                scheduleNotification.style.display = 'none';
+            }, 2000);
+        });
+        
+        // Mood slider functionality
+        moodSlider.addEventListener('input', () => {
+            const value = parseFloat(moodSlider.value);
+            moodValueDisplay.textContent = value.toFixed(1);
+            updateMoodLabel(value, moodLabelDisplay);
+        });
+        
+        // Specific mood input functionality
+        specificMoodInput.addEventListener('input', () => {
+            const value = parseFloat(specificMoodInput.value);
+            updateMoodLabel(value, specificMoodLabel);
+        });
+        
+        // Function to update mood label based on value
+        function updateMoodLabel(value, labelElement) {
+            let label = '';
+            
+            if (value <= -4) label = 'Extremely negative';
+            else if (value <= -3) label = 'Very negative';
+            else if (value <= -2) label = 'Moderately negative';
+            else if (value <= -1) label = 'Slightly negative';
+            else if (value < 1) label = 'Neutral';
+            else if (value < 2) label = 'Slightly positive';
+            else if (value < 3) label = 'Moderately positive';
+            else if (value < 4) label = 'Very positive';
+            else label = 'Extremely positive';
+            
+            labelElement.textContent = label;
+        }
+        
+        // Save current mood
+        saveCurrentMoodBtn.addEventListener('click', () => {
+            const now = new Date();
+            const moodEntry = {
+                timestamp: now.toISOString(),
+                time: now.toTimeString().substring(0, 5),
+                moodValue: parseFloat(moodSlider.value),
+                notes: moodNotesInput.value
+            };
+            
+            saveMoodEntry(moodEntry);
+            
+            // Reset form and show notification
+            moodSlider.value = 0;
+            moodValueDisplay.textContent = '0';
+            moodLabelDisplay.textContent = 'Neutral';
+            moodNotesInput.value = '';
+            
+            currentNotification.style.display = 'block';
+            setTimeout(() => {
+                currentNotification.style.display = 'none';
+            }, 2000);
+        });
+        
+        // Save specific mood
+        saveSpecificMoodBtn.addEventListener('click', () => {
+            if (!specificTimeInput.value) {
+                alert('Please select a time for this entry');
+                return;
+            }
+            
+            const now = new Date();
+            const [hours, minutes] = specificTimeInput.value.split(':');
+            
+            // Create date for today at the specified time
+            const entryDate = new Date(now);
+            entryDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+            
+            const moodEntry = {
+                timestamp: entryDate.toISOString(),
+                time: specificTimeInput.value,
+                moodValue: parseFloat(specificMoodInput.value),
+                notes: specificNotesInput.value
+            };
+            
+            saveMoodEntry(moodEntry);
+            
+            // Reset form and show notification
+            specificTimeInput.value = '';
+            specificMoodInput.value = 0;
+            specificMoodLabel.textContent = 'Neutral';
+            specificNotesInput.value = '';
+            
+            specificNotification.style.display = 'block';
+            setTimeout(() => {
+                specificNotification.style.display = 'none';
+            }, 2000);
+        });
+        
+        // Save mood entry to localStorage
+        function saveMoodEntry(entry) {
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const storageKey = `moodData_${today}`;
+            
+            // Get existing entries for today
+            const existingEntries = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            
+            // Add new entry and save back to localStorage
+            existingEntries.push(entry);
+            localStorage.setItem(storageKey, JSON.stringify(existingEntries));
+        }
+        
+        // History chart functionality
+        let historyChart = null;
+        
+        function loadHistoryData() {
+            const selectedDate = historyDateInput.value || new Date().toISOString().split('T')[0];
+            const storageKey = `moodData_${selectedDate}`;
+            
+            // Get data for selected date
+            const dayEntries = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            
+            // Sort entries by time
+            dayEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            // Display entries in list
+            displayEntryList(dayEntries);
+            
+            // Display chart
+            displayHistoryChart(dayEntries, selectedDate);
+        }
+        
+        function displayEntryList(entries) {
+            entryListContainer.innerHTML = '';
+            
+            if (entries.length === 0) {
+                entryListContainer.innerHTML = '<p>No mood entries for this date.</p>';
+                return;
+            }
+            
+            entries.forEach(entry => {
+                const listItem = document.createElement('li');
+                listItem.className = 'entry-item';
+                
+                const timeElement = document.createElement('div');
+                timeElement.className = 'entry-time';
+                timeElement.textContent = entry.time;
+                
+                const moodElement = document.createElement('div');
+                moodElement.innerHTML = `<span class="mood-label">Mood: </span>
+                                      <span class="mood-value">${entry.moodValue}</span>`;
+                
+                listItem.appendChild(timeElement);
+                listItem.appendChild(moodElement);
+                
+                if (entry.notes) {
+                    const notesElement = document.createElement('div');
+                    notesElement.className = 'entry-notes';
+                    notesElement.textContent = entry.notes;
+                    listItem.appendChild(notesElement);
+                }
+                
+                entryListContainer.appendChild(listItem);
+            });
+        }
+        
+        function displayHistoryChart(entries, selectedDate) {
+            const ctx = document.getElementById('history-chart').getContext('2d');
+            
+            if (historyChart) {
+                historyChart.destroy();
+            }
+            
+            if (entries.length === 0) {
+                // Show empty chart
+                historyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Mood',
+                            data: [],
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            tension: 0.4,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                min: -5,
+                                max: 5,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                return;
+            }
+            
+            // Get wake up time from schedule
+            const schedule = JSON.parse(localStorage.getItem('moodSchedule') || '{"wakeUpTime":"07:00", "bedTime":"23:00"}');
+            const wakeUpTime = schedule.wakeUpTime;
+            
+            // Create time labels starting from wake up time
+            const [wakeHours, wakeMinutes] = wakeUpTime.split(':').map(num => parseInt(num, 10));
+            const wakeUpDateTime = new Date(selectedDate);
+            wakeUpDateTime.setHours(wakeHours, wakeMinutes, 0, 0);
+            
+            // Create time slots every hour from wake up until bedtime
+            const [bedHours, bedMinutes] = schedule.bedTime.split(':').map(num => parseInt(num, 10));
+            const bedDateTime = new Date(selectedDate);
+            bedDateTime.setHours(bedHours, bedMinutes, 0, 0);
+            
+            const timeLabels = [];
+            const moodData = [];
+            
+            // Create hourly slots from wake up to bed time
+            const currentSlot = new Date(wakeUpDateTime);
+            while (currentSlot <= bedDateTime) {
+                timeLabels.push(currentSlot.toTimeString().substring(0, 5));
+                
+                // Find closest mood entry for this time
+                const slotTime = currentSlot.toTimeString().substring(0, 5);
+                let foundEntry = false;
+                
+                // Look for an exact match
+                for (const entry of entries) {
+                    const entryTime = new Date(entry.timestamp).toTimeString().substring(0, 5);
+                    if (entryTime === slotTime) {
+                        moodData.push(entry.moodValue);
+                        foundEntry = true;
+                        break;
+                    }
+                }
+                
+                // If no exact match, interpolate between closest entries
+                if (!foundEntry) {
+                    let prevEntry = null;
+                    let nextEntry = null;
+                    
+                    for (const entry of entries) {
+                        const entryTime = new Date(entry.timestamp);
+                        
+                        if (entryTime <= currentSlot) {
+                            // This entry is before or at the current slot
+                            if (!prevEntry || entryTime > new Date(prevEntry.timestamp)) {
+                                prevEntry = entry;
+                            }
+                        } else {
+                            // This entry is after the current slot
+                            if (!nextEntry || entryTime < new Date(nextEntry.timestamp)) {
+                                nextEntry = entry;
+                            }
+                        }
+                    }
+                    
+                    if (prevEntry && nextEntry) {
+                        // Interpolate between the two entries
+                        const prevTime = new Date(prevEntry.timestamp);
+                        const nextTime = new Date(nextEntry.timestamp);
+                        const totalTimeDiff = nextTime - prevTime;
+                        const currentTimeDiff = currentSlot - prevTime;
+                        const ratio = currentTimeDiff / totalTimeDiff;
+                        
+                        const interpolatedValue = prevEntry.moodValue + 
+                            (nextEntry.moodValue - prevEntry.moodValue) * ratio;
+                        
+                        moodData.push(interpolatedValue);
+                    } else if (prevEntry) {
+                        // Just use the previous entry
+                        moodData.push(prevEntry.moodValue);
+                    } else if (nextEntry) {
+                        // Just use the next entry
+                        moodData.push(nextEntry.moodValue);
+                    } else {
+                        // No entries at all, use 0
+                        moodData.push(0);
+                    }
+                }
+                
+                // Move to next hour
+                currentSlot.setHours(currentSlot.getHours() + 1);
+            }
+            
+            // Create the chart
+            historyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [{
+                        label: 'Mood',
+                        data: moodData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        tension: 0.4,
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            min: -5,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        // Insights functionality
+        let insightsChart = null;
+        
+        function loadInsightsData() {
+            // Get all mood data across dates
+            const allMoodData = [];
+            const today = new Date();
+            
+            // Check the last 30 days
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const storageKey = `moodData_${dateStr}`;
+                
+                const dayEntries = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                allMoodData.push(...dayEntries);
+            }
+            
+            if (allMoodData.length === 0) {
+                // Show placeholder data if no entries exist
+                displayPlaceholderInsights();
+                return;
+            }
+            
+            // Group data by day of week for insights
+            const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayAverages = Array(7).fill(0);
+            const dayCounts = Array(7).fill(0);
+            
+            // Calculate averages by day
+            allMoodData.forEach(entry => {
+                const date = new Date(entry.timestamp);
+                const dayOfWeek = date.getDay();
+                dayAverages[dayOfWeek] += entry.moodValue;
+                dayCounts[dayOfWeek]++;
+            });
+            
+            // Calculate average mood for each day
+            for (let i = 0; i < 7; i++) {
+                if (dayCounts[i] > 0) {
+                    dayAverages[i] = dayAverages[i] / dayCounts[i];
+                }
+            }
+            
+            // Update chart
+            const ctx = document.getElementById('insights-chart').getContext('2d');
+            
+            if (insightsChart) {
+                insightsChart.destroy();
+            }
+            
+            insightsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Average Mood',
+                        data: dayAverages,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            min: -5,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Analyze mood factors
+            analyzeFactors(allMoodData);
+        }
+        
+        function analyzeFactors(moodData) {
+            // For demo purposes, we'll do a simple keyword analysis
+            // In a real app, this would be more sophisticated
+            const happyKeywords = ['exercise', 'friends', 'family', 'success', 'relax', 'food', 'sleep', 'outdoors', 'music', 'hobby'];
+            const sadKeywords = ['stress', 'work', 'tired', 'sick', 'pain', 'lonely', 'argument', 'failure', 'worry', 'money'];
+            
+            const happyNotes = moodData
+                .filter(entry => entry.moodValue > 2.5)  // Changed from 5 to 2.5 for -5/+5 scale
+                .map(entry => entry.notes || '');
+                
+            const sadNotes = moodData
+                .filter(entry => entry.moodValue < -2.5)  // Changed from -5 to -2.5 for -5/+5 scale
+                .map(entry => entry.notes || '');
+            
+            const happyFactors = findKeywordMatches(happyNotes, happyKeywords);
+            const sadFactors = findKeywordMatches(sadNotes, sadKeywords);
+            
+            // Display factors
+            displayFactors('happiness-factors', happyFactors.length > 0 ? 
+                happyFactors : 
+                ['Exercise', 'Social time', 'Good food', 'Productivity', 'Nature']);
+                
+            displayFactors('sadness-factors', sadFactors.length > 0 ? 
+                sadFactors : 
+                ['Work stress', 'Poor sleep', 'Arguments', 'Bad weather', 'Financial worry']);
+        }
+        
+        function findKeywordMatches(notes, keywords) {
+            const matches = [];
+            
+            notes.forEach(note => {
+                keywords.forEach(keyword => {
+                    if (note.toLowerCase().includes(keyword.toLowerCase())) {
+                        matches.push(keyword);
+                    }
+                });
+            });
+            
+            // Count frequencies and get top matches
+            const counts = {};
+            matches.forEach(word => {
+                counts[word] = (counts[word] || 0) + 1;
+            });
+            
+            return Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(entry => entry[0]);
+        }
+        
+        function displayFactors(elementId, factors) {
+            const listElement = document.getElementById(elementId);
+            listElement.innerHTML = '';
+            
+            factors.forEach(factor => {
+                const listItem = document.createElement('li');
+                listItem.textContent = factor;
+                listElement.appendChild(listItem);
+            });
+        }
+        
+        function displayPlaceholderInsights() {
+            // Show placeholder data when no entries exist
+            const ctx = document.getElementById('insights-chart').getContext('2d');
+            
+            if (insightsChart) {
+                insightsChart.destroy();
+            }
+            
+            insightsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        label: 'Average Mood (Sample Data)',
+                        data: [3, 1, 2, -1, 2, 2.5, 3.5],
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            min: -5,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Display default factors
+            displayFactors('happiness-factors', ['Exercise', 'Social time', 'Good food', 'Productivity', 'Nature']);
+            displayFactors('sadness-factors', ['Work stress', 'Poor sleep', 'Arguments', 'Bad weather', 'Financial worry']);
+        }
+        
+        // Set current time for specific time input when opened
+        document.querySelector('.log-method-button[data-method="specific"]').addEventListener('click', () => {
+            if (!specificTimeInput.value) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                specificTimeInput.value = `${hours}:${minutes}`;
+            }
+        });
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set date input to today
+            const today = new Date();
+            const todayFormatted = today.toISOString().split('T')[0];
+            historyDateInput.value = todayFormatted;
+            
+            // Set up date change listener
+            historyDateInput.addEventListener('change', loadHistoryData);
+            
+            // Load any saved schedule
+            const savedSchedule = JSON.parse(localStorage.getItem('moodSchedule') || '{"wakeUpTime":"07:00", "bedTime":"23:00"}');
+            wakeUpTimeInput.value = savedSchedule.wakeUpTime;
+            bedTimeInput.value = savedSchedule.bedTime;
+            
+            // Initialize mood label displays
+            updateMoodLabel(0, moodLabelDisplay);
+            updateMoodLabel(0, specificMoodLabel);
+        });
+    </script>
+</body>
+</html> 

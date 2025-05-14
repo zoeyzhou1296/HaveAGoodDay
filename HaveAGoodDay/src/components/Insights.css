@@ -1,0 +1,38 @@
+.mood-notes-analysis {
+  margin: 30px 0;
+}
+
+.mood-notes-categories {
+  display: flex;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.high-mood-notes, .low-mood-notes {
+  flex: 1;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.high-mood-notes {
+  background-color: rgba(75, 192, 192, 0.1);
+  border: 1px solid rgba(75, 192, 192, 0.3);
+}
+
+.low-mood-notes {
+  background-color: rgba(255, 99, 132, 0.1);
+  border: 1px solid rgba(255, 99, 132, 0.3);
+}
+
+.mood-notes-categories h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.mood-notes-categories ul {
+  padding-left: 20px;
+}
+
+.mood-notes-categories li {
+  margin-bottom: 8px;
+} 
